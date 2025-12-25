@@ -1,0 +1,97 @@
+#include <iostream>
+#include <vector>
+using namespace std;
+
+const int DAYS = 5;
+
+struct Student {
+    int id;
+    string name;
+    int attendance[DAYS];
+};
+
+// Function to add a student
+void addStudent(vector<Student> &students) {
+    Student s;
+
+    cout << "Enter student ID: ";
+    cin >> s.id;
+
+    cout << "Enter student name: ";
+    cin >> s.name;
+
+    // attendance
+    for (int i = 0; i < DAYS; i++) {
+        s.attendance[i] = 0;
+    }
+
+    
+    students.push_back(s);
+
+    cout << "Student added successfully!" << endl;
+}
+
+
+void markAttendance(vector<Student> &stu) {
+    int id, day, status;
+      bool found = false;
+    cout << "Enter student ID to mark attendance: ";
+    cin >> id;
+
+  
+
+    for (int i = 0; i < stu.size(); i++) {
+        if (stu[i].id == id) {
+            found = true;
+
+            cout << "Enter day number (1-" << DAYS << "): ";
+            cin >> day;
+
+            cout << "Enter status (1 = Present, 0 = Absent): ";
+            cin >> status;
+
+            if (day >= 1 && day <= DAYS) {
+                stu[i].attendance[day - 1] = status;
+                cout << "Attendance updated!" << endl;
+            } else {
+                cout << "Invalid day!" << endl;
+            }
+            break;
+        }
+    }
+
+    if (!found) {
+        cout << "Student not found!" << endl;
+    }
+}
+
+int main() {
+    vector<Student> stu;
+    int choice;
+
+    do {
+        cout << "\n===== ATTENDANCE SYSTEM =====" << endl;
+        cout << "1. Add Student" << endl;
+        cout << "2. Mark Attendance" << endl;
+        cout << "3. Exit" << endl;
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1:
+                addStudent(stu);
+                break;
+            case 2:
+                markAttendance(stu);
+                break;
+            case 3:
+                cout << "Exiting program..." << endl;
+                break;
+            default:
+                cout << "Invalid choice! Please enter 1-3." << endl;
+        }
+
+    } while (choice != 3);
+
+    return 0;
+}
