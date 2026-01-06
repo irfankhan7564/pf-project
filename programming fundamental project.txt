@@ -1,97 +1,609 @@
-#include <iostream>
-#include <vector>
+#include<iostream>
+#include<vector>
+#include<string>
+#include<iomanip>
+#include<fstream>
+
 using namespace std;
 
-const int DAYS = 5;
+const int days = 30;
+const string adminpass ="admin123";
+const string studentfile ="students.txt";
+const string libraryfil ="library.txt";
+const string idfil ="id.txt";
 
-struct Student {
-    int id;
-    string name;
-    int attendance[DAYS];
+// STRUCTS
+struct Attendance
+{
+    int math[days] = {0};
+    int programming[days] = {0};
+    int physics[days] = {0};
+    int english[days] = {0};
+    int chemistry[days] = {0};
 };
 
-// Function to add a student
-void addStudent(vector<Student> &students) {
-    Student s;
+struct Marks
+{
+    int math = 0, programming = 0, physics = 0, english = 0, chemistry = 0;
+};
 
-    cout << "Enter student ID: ";
-    cin >> s.id;
+struct Student
+{
+    int id;
+    string name;
+    string department;
+    string password;
+    Attendance attendance;
+    Marks marks;
+    bool marksAdded = false;
+};
 
-    cout << "Enter student name: ";
-    cin >> s.name;
+struct Book
+{
+    string title;
+    bool isIssued =false;
+    int issuedToStudentID= 0;
+};
 
-    // attendance
-    for (int i = 0; i < DAYS; i++) {
-        s.attendance[i] = 0;
+vector<Student>students;
+vector<Book>library;
+int autoID =1001;
+
+// FUNCTION
+void adminPanel();
+void studentPanel(Student &s);
+int studentLogin();
+void registerStudent();
+void addAttendance(Student &s);
+void viewAttendance(const Student &s);
+void addMarks(Student &s);
+void viewResult(const Student &s);
+void initializeBooks();
+void showBooks();
+void issueBook(Student &s);
+void returnBook(Student &s);
+void saveData();
+void loadData();
+void saveLibraryData();
+void loadLibraryData();
+
+// FILE HANDLING
+void saveData()
+{
+    // Save  ID
+    ofstream idFile(idfil);
+    if (idFile.is_open())
+    {
+        idFile << autoID;
+        idFile.close();
     }
 
-    
+    // Save Students
+    ofstream studentFile(studentfile);
+    if (studentFile.is_open())
+    {
+        for (const auto &s : students)
+        {
+            studentFile<<s.id<<endl
+                        <<s.name<<endl
+                        <<s.department<<endl
+                        <<s.password<<endl
+                        <<s.marksAdded<<endl;
+
+            studentFile <<s.marks.math << " " << s.marks.programming << " "
+                        <<s.marks.physics << " " << s.marks.english << " "
+                        <<s.marks.chemistry << endl;
+
+            for (int i = 0; i < days; i++)
+                studentFile<< s.attendance.math[i] << " ";
+            studentFile<<endl;
+            for (int i = 0; i < days; i++)
+                studentFile<< s.attendance.programming[i] << " ";
+            studentFile<<endl;
+            for (int i = 0; i < days; i++)
+                studentFile<<s.attendance.physics[i] << " ";
+            studentFile<<endl;
+            for (int i = 0; i < days; i++)
+                studentFile <<s.attendance.english[i] << " ";
+            studentFile << endl;
+            for (int i = 0; i < days; i++)
+                studentFile << s.attendance.chemistry[i] << " ";
+            studentFile << endl;
+        }
+        studentFile.close();
+    }
+
+    // Save Library
+    saveLibraryData();
+}
+
+void loadData()
+{
+    // Load ID
+    ifstream idFile(idfil);
+    if (idFile.is_open())
+    {
+        idFile>>autoID;
+        idFile.close();
+    }
+
+    // Load Students
+    ifstream studentFile(studentfile);
+    if (studentFile.is_open())
+    {
+        Student s;
+        while (studentFile >> s.id)
+        {
+            studentFile>>s.name>>s.department>>s.password>>s.marksAdded;
+
+            studentFile>>s.marks.math>>s.marks.programming>>s.marks.physics>>s.marks.english>>s.marks.chemistry;
+
+            for (int i = 0; i < days; i++)
+                studentFile >> s.attendance.math[i];
+            for (int i = 0; i < days; i++)
+                studentFile >> s.attendance.programming[i];
+            for (int i = 0; i < days; i++)
+                studentFile >> s.attendance.physics[i];
+            for (int i = 0; i < days; i++)
+                studentFile >> s.attendance.english[i];
+            for (int i = 0; i < days; i++)
+                studentFile >> s.attendance.chemistry[i];
+
+            students.push_back(s);
+        }
+        studentFile.close();
+    }
+
+    loadLibraryData();
+}
+
+// LIBRARY
+void initializeBooks()
+{
+    library.push_back({"The Art of War"});
+    library.push_back({"Sapiens"});
+    library.push_back({"History of Civilizations"});
+    library.push_back({""});
+    library.push_back({"The Diary of Anne Frank"});
+    saveLibraryData();
+}
+
+void saveLibraryData()
+{
+    ofstream libraryFile(libraryfil);
+    if (libraryFile.is_open())
+    {
+        libraryFile << library.size()<<endl;
+        for (const auto &book : library)
+        {
+            libraryFile<< book.title<<endl;
+            libraryFile<< book.isIssued << " " << book.issuedToStudentID<<endl;
+        }
+        libraryFile.close();
+    }
+}
+
+void loadLibraryData()
+{
+    ifstream libraryFile(libraryfil);
+    if (libraryFile.is_open())
+    {
+        int totalBooks;
+        libraryFile>> totalBooks;
+        string blankLine;
+        getline(libraryFile, blankLine);
+
+        for (int i = 0; i < totalBooks; i++)
+        {
+            Book book;
+            getline(libraryFile, book.title);
+            libraryFile>>book.isIssued >> book.issuedToStudentID;
+            getline(libraryFile, blankLine);
+            library.push_back(book);
+        }
+
+        libraryFile.close();
+    }
+    else
+    {
+        initializeBooks();
+    }
+}
+
+void showBooks()
+{
+    system("cls");
+    cout<< "\n--- LIBRARY BOOKS ---\n";
+    for (int i = 0; i < library.size(); i++)
+    {
+        cout<< i + 1 << ". " << library[i].title
+             << (library[i].isIssued ? " (Issued)" : " (Available)") << endl;
+    }
+}
+
+void issueBook(Student &student)
+{
+    system("cls");
+    showBooks();
+
+    int selectedBookNumber;
+    cout<< "Select Book Number: ";
+    cin >> selectedBookNumber;
+
+    if (selectedBookNumber < 1 || selectedBookNumber > library.size())
+    {
+        cout<< "Invalid Choice!\n";
+        return;
+    }
+
+    Book &selectedBook = library[selectedBookNumber - 1];
+
+    if (selectedBook.isIssued)
+    {
+        cout<< "Book Already Issued!\n";
+        return;
+    }
+
+    selectedBook.isIssued = true;
+    selectedBook.issuedToStudentID = student.id;
+
+    cout<< "Book Issued Successfully! Return in 14 days.\n";
+    saveLibraryData();
+}
+
+void returnBook(Student &student)
+{
+    system("cls");
+    cout<< "\n--- RETURN BOOK ---\n";
+
+    bool hasIssuedBook = false;
+    for (int i = 0; i < library.size(); i++)
+    {
+        if (library[i].isIssued && library[i].issuedToStudentID == student.id)
+        {
+            cout<< i + 1 << ". " << library[i].title << endl;
+            hasIssuedBook = true;
+        }
+    }
+
+    if (!hasIssuedBook)
+    {
+        cout<< "No book issued to you.\n";
+        return;
+    }
+
+    int selectedBookNumber;
+    cout<<"Select Book Number to Return: ";
+    cin>>selectedBookNumber;
+
+    if (selectedBookNumber < 1 || selectedBookNumber > library.size())
+    {
+        cout << "Invalid Choice!\n";
+        return;
+    }
+
+    Book &selectedBook = library[selectedBookNumber - 1];
+
+    if (selectedBook.issuedToStudentID != student.id)
+    {
+        cout<< "You did not issue this book!\n";
+        return;
+    }
+
+    selectedBook.isIssued = false;
+    selectedBook.issuedToStudentID = 0;
+
+    cout<< "Book Returned Successfully!\n";
+    saveLibraryData();
+}
+
+// ADMIN function
+void registerStudent()
+{
+    system("cls");
+    Student s;
+    s.id = autoID++;
+
+    cout<< "\nEnter Student Name: ";
+    cin>> s.name;
+    cout<< "Department: ";
+    cin>> s.department;
+    cout<< "Create Password: ";
+    cin>> s.password;
+
     students.push_back(s);
 
-    cout << "Student added successfully!" << endl;
+    cout<< "\nStudent Registered Successfully!";
+    cout<< "\nAssigned Student ID: " << s.id << endl;
+
+    saveData();
 }
 
+void addAttendance(Student &s)
+{
+    system("cls");
+    int day, subject, status;
 
-void markAttendance(vector<Student> &stu) {
-    int id, day, status;
-      bool found = false;
-    cout << "Enter student ID to mark attendance: ";
-    cin >> id;
+    cout<< "Enter Day (1-" << days << "): ";
+    cin>> day;
+    if (day<1 || day > days)
+    {
+        cout<< "Invalid day!\n";
+        return;
+    }
 
-  
+    cout<< "Select Subject:\n1. Math\n2. Programming\n3. Physics\n4. English\n5. Chemistry\nChoice: ";
+    cin>> subject;
 
-    for (int i = 0; i < stu.size(); i++) {
-        if (stu[i].id == id) {
-            found = true;
+    cout<< "Enter Status (1 = Present, 0 = Absent): ";
+    cin>> status;
 
-            cout << "Enter day number (1-" << DAYS << "): ";
-            cin >> day;
+    switch (subject)
+    {
+    case 1:
+        s.attendance.math[day - 1] = status;
 
-            cout << "Enter status (1 = Present, 0 = Absent): ";
-            cin >> status;
+        break;
+    case 2:
+        s.attendance.programming[day - 1] = status;
+        break;
+    case 3:
+        s.attendance.physics[day - 1] = status;
+        break;
+    case 4:
+        s.attendance.english[day - 1] = status;
+        break;
+    case 5:
+        s.attendance.chemistry[day - 1] = status;
+        break;
+    default:
+        cout << "Invalid Subject!\n";
+        return;
+    }
 
-            if (day >= 1 && day <= DAYS) {
-                stu[i].attendance[day - 1] = status;
-                cout << "Attendance updated!" << endl;
-            } else {
-                cout << "Invalid day!" << endl;
+    cout << "Attendance Updated!\n";
+    saveData();
+}
+
+void addMarks(Student &s)
+{
+    system("cls");
+    cout<< "Enter Marks (0-100):\n";
+    cout<< "Math: ";
+    cin>> s.marks.math;
+    cout<< "Programming: ";
+    cin>> s.marks.programming;
+    cout<< "Physics: ";
+    cin >> s.marks.physics;
+    cout << "English: ";
+    cin>> s.marks.english;
+    cout<< "Chemistry: ";
+    cin>> s.marks.chemistry;
+
+    s.marksAdded = true;
+    saveData();
+}
+
+// STUDENT LOGIN
+int studentLogin()
+{
+    system("cls");
+    int id;
+    string pass;
+
+    cout<< "\nEnter Student ID: ";
+    cin>> id;
+    cout<< "Enter Password: ";
+    cin>> pass;
+
+    for (int i = 0; i < students.size(); i++)
+    {
+        if (students[i].id == id && students[i].password == pass)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void viewAttendance(const Student &s)
+{
+    system("cls");
+    cout << "\n--- ATTENDANCE ---\n";
+
+    cout<<"Math: ";
+    for (int i = 0; i < days; i++)
+        cout << s.attendance.math[i] << " ";
+
+    cout<<"\nProgramming: ";
+    for (int i = 0; i < days; i++)
+        cout << s.attendance.programming[i] << " ";
+
+    cout<<"\nPhysics: ";
+    for (int i = 0; i < days; i++)
+        cout << s.attendance.physics[i] << " ";
+
+    cout<<"\nEnglish: ";
+    for (int i = 0; i < days; i++)
+        cout << s.attendance.english[i] << " ";
+
+    cout<<"\nChemistry: ";
+    for (int i = 0; i < days; i++)
+        cout<< s.attendance.chemistry[i] << " ";
+
+    cout<<endl;
+}
+
+char calculateGrade(int marks)
+{
+    if (marks>= 85)
+    {
+        return 'A';
+    }
+    if (marks>= 70)
+        return 'B';
+    if (marks >= 55)
+        return 'C';
+    if (marks >= 40)
+        return 'D';
+    return 'F';
+}
+
+string passFail(int marks)
+{
+    return (marks >= 40) ? "PASS" : "FAIL";
+}
+
+void viewResult(const Student &s)
+{
+    system("cls");
+    if (!s.marksAdded)
+    {
+        cout<< "Marks not added yet.\n";
+        return;
+    }
+
+    cout<< "\n========== RESULT SHEET ==========\n";
+    cout<< "Student ID: " << s.id << "\nName      : " << s.name
+         << "\nDepartment: " << s.department << "\n";
+
+    cout<< "\n-------------------------------------------------\n";
+    cout<< left << setw(15) << "Subject"
+         << setw(10) << "Marks"
+         << setw(10) << "Grade"
+         << setw(10) << "Status" << endl;
+    cout<< "-------------------------------------------------\n";
+
+    cout<< setw(15)<< "Math" << setw(10) << s.marks.math
+         << setw(10)<< calculateGrade(s.marks.math)
+         << setw(10)<< passFail(s.marks.math) << endl;
+
+    cout<< setw(15)<< "Programming" << setw(10) << s.marks.programming
+         << setw(10)<< calculateGrade(s.marks.programming)
+         << setw(10)<< passFail(s.marks.programming) << endl;
+
+    cout<< setw(15)<< "Physics" << setw(10) << s.marks.physics
+         << setw(10)<< calculateGrade(s.marks.physics)
+         << setw(10)<< passFail(s.marks.physics) << endl;
+
+    cout<<setw(15)<< "English" << setw(10) << s.marks.english
+         <<setw(10)<< calculateGrade(s.marks.english)
+         <<setw(10)<< passFail(s.marks.english) << endl;
+
+    cout<< setw(15)<< "Chemistry" << setw(10) << s.marks.chemistry
+         << setw(10)<< calculateGrade(s.marks.chemistry)
+         << setw(10)<< passFail(s.marks.chemistry) << endl;
+}
+
+// ADMIN PANEL
+void adminPanel()
+{
+    system("cls");
+    string password;
+    cout<< "\nEnter Admin Password: ";
+    cin>> password;
+
+    if (password != adminpass)
+    {
+        cout << "Incorrect Password! Access Denied.\n";
+        return;
+    }
+
+    int choice;
+    do
+    {
+        cout<< "\n--- Admin Panel ---\n";
+        cout<< "1. Register Student\n2. Add Attendance\n3. Add Marks\n4. Exit\nChoice: ";
+        cin>> choice;
+
+        if (choice == 1)
+            registerStudent();
+        else if (choice == 2 || choice == 3)
+        {
+            int studentID;
+            cout << "Enter Student ID: ";
+            cin >> studentID;
+
+            bool found = false;
+            for (auto &s : students)
+            {
+                if (s.id == studentID)
+                {
+                    found = true;
+                    if (choice == 2)
+                        addAttendance(s);
+                    else
+                        addMarks(s);
+                    break;
+                }
             }
+            if (!found)
+                cout << "Student Not Found!\n";
+        }
+    } while (choice != 4);
+}
+
+// STUDENT PANEL
+void studentPanel(Student &s)
+{
+    system("cls");
+    int choice;
+    do
+    {
+        cout<<"\n--- Student Panel ---\n";
+        cout<<"1. View Attendance\n";
+        cout<<"2. View Result\n";
+        cout<<"3. View Library\n";
+        cout<<"4. Issue Book\n";
+        cout<<"5. Return Book\n";
+        cout<<"6. Logout\nChoice: ";
+        cin>> choice;
+
+        switch (choice)
+        {
+        case 1:
+            viewAttendance(s);
+            break;
+        case 2:
+            viewResult(s);
+            break;
+        case 3:
+            showBooks();
+            break;
+        case 4:
+            issueBook(s);
+            break;
+        case 5:
+            returnBook(s);
             break;
         }
-    }
-
-    if (!found) {
-        cout << "Student not found!" << endl;
-    }
+    } while (choice != 6);
 }
 
-int main() {
-    vector<Student> stu;
+int main()
+{
+    system("cls");
+    loadData();
+
     int choice;
+    do
+    {
+        cout<< "===== UNIVERSITY MANAGEMENT SYSTEM =====\n";
+        cout<< "1. Admin Login\n2. Student Login\n3. Exit\nChoice: ";
+        cin>> choice;
 
-    do {
-        cout << "\n===== ATTENDANCE SYSTEM =====" << endl;
-        cout << "1. Add Student" << endl;
-        cout << "2. Mark Attendance" << endl;
-        cout << "3. Exit" << endl;
-        cout << "Enter your choice: ";
-        cin >> choice;
-
-        switch (choice) {
-            case 1:
-                addStudent(stu);
-                break;
-            case 2:
-                markAttendance(stu);
-                break;
-            case 3:
-                cout << "Exiting program..." << endl;
-                break;
-            default:
-                cout << "Invalid choice! Please enter 1-3." << endl;
+        if (choice ==1)
+            adminPanel();
+        else if (choice ==2)
+        {
+            int studentIndex = studentLogin();
+            if (studentIndex != -1)
+                studentPanel(students[studentIndex]);
+            else
+                cout<< "Invalid Login!\n";
         }
 
-    } while (choice != 3);
+    } while (choice!= 3);
 
     return 0;
 }
